@@ -26,5 +26,16 @@ export const authRepository = {
       userName: data.user?.user_metadata?.name ?? null,
       error: null,
     };
-  }
-};
+  },
+
+  async getCurrentUser() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error != null) throw Error(error.message);
+    if (data.session == null) return null;
+    return {
+      ...data.session.user,
+      userName: data.session.user?.user_metadata?.name ?? null,
+      
+    };
+  },
+}

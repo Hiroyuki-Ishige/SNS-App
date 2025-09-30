@@ -1,12 +1,17 @@
-import React, { useState } from "react";
+import { useContext, useState } from "react";
 import { authRepository } from "../repositories/auth";
-import {  useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { SessionContext } from "../SessionProvider";
 
 export default function SignUp() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { currentUser, setCurrentUser } = useContext(SessionContext) || {
+    currentUser: null,
+    setCurrentUser: () => {},
+  };
 
   const signup = async () => {
     // Call the signup function from authRepository here
@@ -18,6 +23,18 @@ export default function SignUp() {
       setName("");
       setEmail("");
       setPassword("");
+
+      // Update the session context with the signed-up user
+      if (user && user.email && user.id) {
+        setCurrentUser({
+          id: user.id,
+          email: user.email,
+        });
+        console.log("Current user set in context:", currentUser);
+      }
+
+      // Redirect to home page after successful signup
+      if (currentUser != null) return navigate("/");
     } catch (error) {
       console.error("Signup error:", error);
       // Handle signup error (e.g., show error message to user)
@@ -91,7 +108,7 @@ export default function SignUp() {
               <div>
                 <button
                   onClick={signup}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 hover:scale-105 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 hover:scale-105 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   disabled={name === "" || email === "" || password === ""}
                 >
                   Register

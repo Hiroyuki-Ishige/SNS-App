@@ -25,12 +25,13 @@ export default function SignIn() {
         setCurrentUser({
           id: user.id,
           email: user.email,
+          userName: user.userName,
         });
         console.log("Current user set in context:", currentUser);
       }
 
       // Redirect to home page after successful signin
-      navigate("/");
+      if (currentUser != null) navigate("/");
     } catch (error) {
       console.error("Signin error:", error);
       setErrorMessage("Sign-in error. Please check email or password");
@@ -85,7 +86,7 @@ export default function SignIn() {
               <div>
                 <button
                   onClick={signin}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-transform duration-200"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-transform duration-200 cursor-pointer"
                   disabled={email === "" || password === ""}
                 >
                   Log in
