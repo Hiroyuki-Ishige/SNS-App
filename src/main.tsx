@@ -12,4 +12,4 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 
-//TODO: check if post code is correct with Udemy video.
+//TODO: add pagination function in home page

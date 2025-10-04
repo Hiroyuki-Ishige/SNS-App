@@ -16,10 +16,14 @@ export const postRepository = {
     };
   },
 
-  async getAll() {
+  async getPost(page: number, limit: number) {
+    page = isNaN(page) || page < 1 ? 1 : page;
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
     const { data, error } = await supabase
-      .from("posts")
-      .select("id, content, user_id, created_at")
+      .from("posts_view")
+      .select("id, content, user_id, created_at, user_metadata")
+      .range(start, end)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -27,5 +31,26 @@ export const postRepository = {
     }
 
     return data || [];
+  },
+
+  async getAllPost() {
+    const { data, error } = await supabase
+      .from("posts_view")
+      .select("id, content, user_id, created_at, user_metadata")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  },
+
+  async delete(postId: string) {
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
   },
 };

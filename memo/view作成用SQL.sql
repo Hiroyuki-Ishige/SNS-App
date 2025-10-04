@@ -1,0 +1,1 @@
+CREATE VIEW public.posts_view AS SELECT po.id,po.content,po.created_at,us.raw_user_meta_data as user_metadata,us.id as user_id FROM public.posts as po LEFT JOIN auth.users as us ON po.user_id = us.id

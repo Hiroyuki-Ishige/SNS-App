@@ -3,14 +3,20 @@ import { SessionContext } from "../SessionProvider";
 import { Navigate } from "react-router-dom";
 import { SideMenu } from "../components/SideMenu";
 import { postRepository } from "../repositories/post";
+import { Post } from "../components/Post";
+import Pagenation from "../components/Pagenation";
 
 // Define the Post type
-type Post = {
+export type Post = {
   id: string;
   content: string;
   user_id: string;
   created_at: string;
+  user_metadata?: { name: string };
 };
+
+const postsPerPage = 5; // Number of posts per page
+
 
 export default function Home() {
   //React hooks
@@ -20,12 +26,14 @@ export default function Home() {
   };
   const [content, setContent] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  
   // Fetch posts when component loads
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const recentPosts = await postRepository.getAll();
+        const recentPosts = await postRepository.getPost(currentPage, postsPerPage);
         setPosts(recentPosts as Post[]); // ✅ Type assertion
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -33,11 +41,30 @@ export default function Home() {
     };
 
     fetchPosts();
-    console.log("Posts:", posts);
+    totalPagesCalc();
   }, []);
+
+  console.log("Fetched Posts at mount:", posts);
 
   //Navigate to sign-in page if not logged in
   if (currentUser === null) return <Navigate to="/signin" />;
+
+  const totalPagesCalc = async () => {
+    const totalPosts = async () => {
+      try {
+        const allPosts = await postRepository.getAllPost();
+        return allPosts.length;
+      } catch (error) {
+        console.error("Error fetching all posts:", error);
+        return 0;
+      }
+    }
+    const totalPages = Math.ceil((await totalPosts()) / postsPerPage);
+    setTotalPages(totalPages);
+    console.log("Total Pages calculated:", totalPages);
+    return totalPages;
+  }
+
 
   //Handle posting content
   const post = async () => {
@@ -46,13 +73,54 @@ export default function Home() {
       return;
     }
     try {
-      // Assuming postRepository.create is an async function that takes content and userId
       await postRepository.create(content, currentUser.id);
       console.log("Post created successfully");
       setContent(""); // Clear the textarea after successful post
+
+      // ✅ Refresh posts list after creating a new post
+      const updatedPosts = await postRepository.getPost(currentPage, postsPerPage);
+      
+      setPosts(updatedPosts as Post[]);
+      console.log("Posts refreshed after new post");
+      totalPagesCalc(); // Update total pages after new post
     } catch (error) {
       console.error("Error creating post:", error);
     }
+  };
+
+  //Handle delete post
+  const deletePost = async (postId: string) => {
+    if (!currentUser) {
+      console.error("No current user found.");
+      return;
+    }
+    try {
+      await postRepository.delete(postId);
+      console.log("Post deleted successfully");
+
+      // Refresh posts list after deleting a post
+      const updatedPosts = await postRepository.getPost(currentPage, postsPerPage);
+      setPosts(updatedPosts as Post[]);
+      console.log("Posts refreshed after deleting a post");
+      totalPagesCalc(); // Update total pages after deleting a post
+    } catch (error) {
+      console.error("Error deleting post:", error);
+    }
+  };
+
+  //handle page change
+  const nextPage = async () => {
+    const newPage = currentPage + 1;
+    setCurrentPage(newPage);
+    const updatedPosts = await postRepository.getPost(newPage, postsPerPage);
+    setPosts(updatedPosts as Post[]);
+  };
+  const prevPage = async () => {
+    if (currentPage === 1) return; // Prevent going to page 0 or negative
+    const newPage = currentPage - 1;
+    setCurrentPage(newPage);
+    const updatedPosts = await postRepository.getPost(newPage, postsPerPage);
+    setPosts(updatedPosts as Post[]);
   };
 
   return (
@@ -87,30 +155,9 @@ export default function Home() {
         </div>
 
         {/* Recent Posts */}
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold mb-4">Recent Posts</h2>
-          <div className="space-y-4">
-            {posts.length > 0 ? (
-              posts.map((post) => (
-                <div
-                  key={post.id}
-                  className="bg-white p-4 rounded-lg shadow-md"
-                >
-                  <p className="text-gray-800 mb-2">{post.content}</p>
-                  <div className="text-sm text-gray-500">
-                    <span>User Name: {post.user_id}</span>
-                    <span className="ml-4">
-                      {new Date(post.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">
-                No posts yet. Be the first to post!
-              </p>
-            )}
-          </div>
+        <Post posts={posts} onDeletePost={deletePost} />
+        <div className="flex justify-center mt-4 px-4">
+          <Pagenation onNext={nextPage} onPrev={prevPage} currentPage={currentPage} totalPages={totalPages} />
         </div>
       </div>
     </div>
