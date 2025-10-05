@@ -1,10 +1,11 @@
 import { useContext, useEffect, useState } from "react";
 import { SessionContext } from "../SessionProvider";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { SideMenu } from "../components/SideMenu";
 import { postRepository } from "../repositories/post";
 import { Post } from "../components/Post";
 import Pagenation from "../components/Pagenation";
+import { authRepository } from "../repositories/auth";
 
 // Define the Post type
 export type Post = {
@@ -17,10 +18,9 @@ export type Post = {
 
 const postsPerPage = 5; // Number of posts per page
 
-
 export default function Home() {
   //React hooks
-  const { currentUser } = useContext(SessionContext) || {
+  const { currentUser, setCurrentUser } = useContext(SessionContext) || {
     currentUser: null,
     setCurrentUser: () => {},
   };
@@ -28,12 +28,16 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
+  const navigate = useNavigate();
+
   // Fetch posts when component loads
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const recentPosts = await postRepository.getPost(currentPage, postsPerPage);
+        const recentPosts = await postRepository.getPost(
+          currentPage,
+          postsPerPage
+        );
         setPosts(recentPosts as Post[]); // ✅ Type assertion
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -49,6 +53,18 @@ export default function Home() {
   //Navigate to sign-in page if not logged in
   if (currentUser === null) return <Navigate to="/signin" />;
 
+  //Handle Signout
+  const handleSignout = async () => {
+    try {
+      await authRepository.signout();
+      setCurrentUser(null); // Clear current user in context
+      navigate("/signin"); // Redirect to sign-in page
+    } catch (error) {
+      console.error("Signout error:", error);
+    }
+  };
+
+  //Calculate total pages
   const totalPagesCalc = async () => {
     const totalPosts = async () => {
       try {
@@ -58,13 +74,12 @@ export default function Home() {
         console.error("Error fetching all posts:", error);
         return 0;
       }
-    }
+    };
     const totalPages = Math.ceil((await totalPosts()) / postsPerPage);
     setTotalPages(totalPages);
     console.log("Total Pages calculated:", totalPages);
     return totalPages;
-  }
-
+  };
 
   //Handle posting content
   const post = async () => {
@@ -78,8 +93,11 @@ export default function Home() {
       setContent(""); // Clear the textarea after successful post
 
       // ✅ Refresh posts list after creating a new post
-      const updatedPosts = await postRepository.getPost(currentPage, postsPerPage);
-      
+      const updatedPosts = await postRepository.getPost(
+        currentPage,
+        postsPerPage
+      );
+
       setPosts(updatedPosts as Post[]);
       console.log("Posts refreshed after new post");
       totalPagesCalc(); // Update total pages after new post
@@ -91,17 +109,17 @@ export default function Home() {
   //Handle delete post
   const deletePost = async (postId: string) => {
     if (!currentUser) {
-      console.error("No current user found.");
       return;
     }
     try {
       await postRepository.delete(postId);
-      console.log("Post deleted successfully");
 
       // Refresh posts list after deleting a post
-      const updatedPosts = await postRepository.getPost(currentPage, postsPerPage);
+      const updatedPosts = await postRepository.getPost(
+        currentPage,
+        postsPerPage
+      );
       setPosts(updatedPosts as Post[]);
-      console.log("Posts refreshed after deleting a post");
       totalPagesCalc(); // Update total pages after deleting a post
     } catch (error) {
       console.error("Error deleting post:", error);
@@ -128,7 +146,12 @@ export default function Home() {
       <header className="bg-[#34D399] p-4">
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-3xl font-bold text-white">SNS APP</h1>
-          <button className="text-white hover:text-red-600">Logout</button>
+          <button
+            onClick={handleSignout}
+            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-transform duration-200"
+          >
+            Logout
+          </button>
         </div>
       </header>
       <div className="container mx-auto mt-6 p-4">
@@ -157,7 +180,12 @@ export default function Home() {
         {/* Recent Posts */}
         <Post posts={posts} onDeletePost={deletePost} />
         <div className="flex justify-center mt-4 px-4">
-          <Pagenation onNext={nextPage} onPrev={prevPage} currentPage={currentPage} totalPages={totalPages} />
+          <Pagenation
+            onNext={nextPage}
+            onPrev={prevPage}
+            currentPage={currentPage}
+            totalPages={totalPages}
+          />
         </div>
       </div>
     </div>

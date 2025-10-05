@@ -22,21 +22,24 @@ export default function SignIn() {
 
       // Update the session context with the signed-in user
       if (user && user.email) {
-        setCurrentUser({
+        const userToSet = {
           id: user.id,
           email: user.email,
           userName: user.userName,
-        });
+        };
+
+        setCurrentUser(userToSet);
         console.log("Current user set in context:", currentUser);
+        navigate("/");
       }
 
       // Redirect to home page after successful signin
-      if (currentUser != null) navigate("/");
-    } catch (error) {
+
+  }catch (error) {
       console.error("Signin error:", error);
       setErrorMessage("Sign-in error. Please check email or password");
     }
-  };
+};
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4 sm:px-6 lg:px-8">

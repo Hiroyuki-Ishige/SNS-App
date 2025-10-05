@@ -12,4 +12,4 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 
-//TODO: add pagination function in home page
+//TODO: check Youtube video #52 about pagenation.
